@@ -1,0 +1,11 @@
+email_task:
+  description: >
+    Write an email about {topic}. 
+    Make sure to write it in a well structured manner, the date is {current_date}, My name is {my_name}, recipient's name is {recipient_name}.
+    Use these if applicable: Colleague Name: {colleague_name}, colleague's phone number: {colleague_number}.
+  expected_output: >
+    An email with proper formatting for {topic}, which will be sent on {application}. 
+    At the end it will have my signature:{my_signature}
+  agent: email_writer
+
+
