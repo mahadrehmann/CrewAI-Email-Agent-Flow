@@ -3,7 +3,7 @@ import base64
 import requests
 from msal import PublicClientApplication, SerializableTokenCache
 from dotenv import load_dotenv
-import os
+import re
 
 def attach_attachment(file_path):
     if not os.path.exists(file_path):
@@ -101,65 +101,80 @@ def send_mail(message, file_name=""):
 
 
 
-# syntax = {
-#         "message": {
-#             "subject": "Subject Goes Here",
-#             "body": {
-#                 "contentType": "Text",
-#                 "content": "all the content of the mail"
-#             },
+def download_file_from_onedrive(one_drive_file_path):
+    load_dotenv()
 
-#             "attachments": [
-#                 attach_attachment("document.txt")
-#             ],
+    client_id = os.getenv("CLIENT_ID")
+    authority = os.getenv("AUTHORITY")
+    scopes = os.getenv("SCOPES", "").split()
 
-#             "toRecipients": [
-#                 {
-#                     "emailAddress": {
-#                         "address": "i220792@nu.edu.pk"
-#                     }
-#                 }
-#             ]
-#         },
-#         "saveToSentItems": "true"
-#     }
+    cache = SerializableTokenCache()
+    if os.path.exists("token_cache.bin"):
+        cache.deserialize(open("token_cache.bin", "r").read())
 
-# message = {
-#     "message": {
-#         "subject": "CrewAI Email Sender Implementation Complete",
-#         "body": {
-#         "contentType": "Text",
-#         "content": "all the content of the mail"
-#         },
+    app = PublicClientApplication(client_id=client_id, authority=authority, token_cache=cache)
 
-#         "toRecipients": [
-#         {
-#             "emailAddress": {
-#             "address": "i220792@nu.edu.pk"
-#             }
-#         }
-#         ]		
-#     }
-# }
+    accounts = app.get_accounts()
+    if accounts:
+        result = app.acquire_token_silent(scopes, account=accounts[0])
+    else:
+        flow = app.initiate_device_flow(scopes=scopes)
+        print(f"Please go to {flow['verification_uri']} and enter the code: {flow['user_code']}")
+        result = app.acquire_token_by_device_flow(flow)
+
+    with open("token_cache.bin", "w") as f:
+        f.write(cache.serialize())
+
+    if "access_token" in result:
+        access_token = result["access_token"]
+        headers = {
+            "Authorization": f"Bearer {access_token}"
+        }
+
+        print("Scopes granted in token:", result.get("scope"))
+
+        onedrive_file_path = one_drive_file_path
+
+        # Construct URL
+        url = f"https://graph.microsoft.com/v1.0/me/drive/root:{onedrive_file_path}:/content"
+
+        # Download the file content
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 200:
+            # Ensure the folder exists
+            knowledge_dir = os.path.join(os.getcwd(), "knowledge")
+            os.makedirs(knowledge_dir, exist_ok=True)
+
+            # Try to get original filename from the response header
+            content_disp = response.headers.get("Content-Disposition", "")
+            match = re.search(r'filename="(.+?)"', content_disp)
+
+            if match:
+                original_filename = match.group(1)
+                extension = os.path.splitext(original_filename)[1]  # e.g., '.pdf', '.txt'
+            else:
+                extension = ""  # fallback if no filename in headers
+
+            # Set the full path with the new filename while keeping original extension
+            new_filename = f"attachment{extension}"
+            local_file_path = os.path.join(knowledge_dir, new_filename)
+
+            # Save the file
+            with open(local_file_path, "wb") as f:
+                f.write(response.content)
+
+            print(f"✅ File downloaded and saved to: {local_file_path}")
+        else:
+            print(f"❌ Failed to download file: {response.status_code}")
+            print(response.text)
 
 
-# message["message"]["attachments"] = [
-#             attach_attachment("document.txt")
-#         ]
+    else:
+        print("❌ Failed to authenticate:", result.get("error_description"))
 
-# import pprint
-# pprint.pprint(syntax)
-# print("\n---------------------------------------------------------------------\n")
-# pprint.pprint(message)
+    return new_filename
 
-
-# # print(message)
-# send_mail(message)
-
-# def okko():
-#     return "OKOK")
-
-# message ["mahad"] = [
-#             okko()
-#         ],
-# print("okok\n\n",message)
+# print("\n------------------------------\nbismillah\n")     
+# this = download_file_from_onedrive()   
+# print("the file is", this)

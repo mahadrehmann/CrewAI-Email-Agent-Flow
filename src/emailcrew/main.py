@@ -6,6 +6,7 @@ from datetime import datetime
 
 from emailcrew.crew import Emailcrew
 from send_outlook_email import *
+from urllib.parse import quote
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
@@ -36,12 +37,13 @@ def run():
                 ]
             },
             "saveToSentItems": "true"
-        }
+        }                            
 
-    attachment_file= "knowledge\\user_preference.txt"
 
+    onedrive_file_path = quote("/Email Agent File/Transformers Architecture to a kid.docx")
+    
     inputs = {
-        'topic': 'two jokers had a fight', # add signature
+        'topic': 'Two Clown Brothers had a fight',
         'my_name': 'Mahad Rehman',
         'my_signature': 'Computer Science Department\nFAST NUCES Islamabad',
         'recipient_name': 'Sir Faizan the Great',
@@ -50,12 +52,11 @@ def run():
         'current_date': str(datetime.now()),
         'application' : 'outlook',      #can be anything
         'syntax' : syntax,
-        # 'information' : 'cook name and stuff'              #can i stop and ask the user for it?
+        # 'information' : 'people name and stuff'              #can i stop and ask the user for it?
     }
     
     try:
         final_answer = Emailcrew().crew().kickoff(inputs=inputs)
-        # final_answer = "Emailcrew().crew().kickoff(inputs=inputs)"
         print("\nFinal Answer:\n")
         print(final_answer, type(final_answer))
 
@@ -75,6 +76,10 @@ def run():
         # 3. Safely evaluate the Python literal into a dict
         email_payload = ast.literal_eval(dict_str)
         # print("Final JSON is", email_payload)
+
+        #get the file from one drive
+        onedrive_file = download_file_from_onedrive(onedrive_file_path)
+        attachment_file= f"D:\\Codes\\BlueScarf\\Python3.11\\emailcrew\\knowledge\\{onedrive_file}"
 
         # Sendin the mail
         send_mail(email_payload, attachment_file)
