@@ -3,6 +3,7 @@
 
 # Environment variables
 .env
+token_cache.bin
 
 # ChromaDB / vector DB knowledge files
 knowledge/

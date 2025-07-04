@@ -5,6 +5,7 @@ import warnings
 from datetime import datetime
 
 from emailcrew.crew import Emailcrew
+from send_outlook_email import *
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
@@ -13,25 +14,68 @@ warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 # Replace with inputs you want to test with, it will automatically
 # interpolate any tasks and agents information
 
+
 def run():
     """
     Run the crew.
     """
+    syntax = {
+            "message": {
+                "subject": "Subject Goes Here",
+                "body": {
+                    "contentType": "Text",
+                    "content": "all the content of the mail"
+                },
+                "toRecipients": [
+                    {
+                        "emailAddress": {
+                            "address": "i220792@nu.edu.pk"
+                        }
+                    }
+                ]
+            },
+            "saveToSentItems": "true"
+        }
+
     inputs = {
-        'topic': 'Daily Report about the documentation', # add signature
+        'topic': 'done implementing the crewai email sender', # add signature
         'my_name': 'Mahad Rehman',
         'my_signature': 'Computer Science Department\nFAST NUCES Islamabad',
         'recipient_name': 'Sir Faizan the Great',
-        'colleague_name': 'Sherlock' ,
-        'colleague_number' : '1122 2211',
+        'colleague_name': 'Sherlock Holmes' ,
+        'colleague_number' : '+92 123456789',
         'current_date': str(datetime.now()),
-        'application' : 'gmail',      #can be anything
+        'application' : 'outlook',      #can be anything
+        'syntax' : syntax,
+
         # 'information' : 'cook name and stuff'              #can i stop and ask the user for it?
     }
     
     try:
-        Emailcrew().crew().kickoff(inputs=inputs)
-        
+        final_answer = Emailcrew().crew().kickoff(inputs=inputs)
+        # final_answer = "Emailcrew().crew().kickoff(inputs=inputs)"
+        print("\nFinal Answer:\n")
+        print(final_answer, type(final_answer))
+
+        import re, ast
+
+        # 1. Get the raw repr
+        raw = str(final_answer)
+
+        # 2. Strip any markdown fences like ```json … ```
+        #    This regex pulls out the {...} block
+        m = re.search(r"\{(?:.|\s)*\}", raw)
+        if not m:
+            raise ValueError("No dict literal found in CrewOutput")
+
+        dict_str = m.group(0)
+
+        # 3. Safely evaluate the Python literal into a dict
+        email_payload = ast.literal_eval(dict_str)
+        print("Final JSON is", email_payload)
+
+        send_mail(email_payload)
+
     except Exception as e:
         raise Exception(f"An error occurred while running the crew: {e}")
 

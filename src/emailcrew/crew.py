@@ -7,9 +7,9 @@ from typing import List
 # https://docs.crewai.com/concepts/crews#example-crew-class-with-decorators
 
 from crewai.knowledge.source.text_file_knowledge_source import TextFileKnowledgeSource
-text_source = TextFileKnowledgeSource(
-    file_paths=["document.txt"]
-)
+# text_source = TextFileKnowledgeSource(
+#     file_paths=["document.txt", "user_preferences.txt"]
+# )
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -20,8 +20,6 @@ class Emailcrew():
 
     agents: List[BaseAgent]
     tasks: List[Task]
-
-
 
     # Learn more about YAML configuration files here:
     # Agents: https://docs.crewai.com/concepts/agents#yaml-configuration-recommended
@@ -34,13 +32,13 @@ class Emailcrew():
         return Agent(
             config=self.agents_config['email_writer'], # type: ignore[index]
             verbose=True,
-            knowledge_sources=[text_source], # Agent-specific knowledge
-            embedder={
-                "provider": "openai",
-                "config": {
-                    "model": "text-embedding-3-small"  # or "text-embedding-3-large"
-                }
-            }
+            # knowledge_sources=[text_source], # Agent-specific knowledge
+            # embedder={
+            #     "provider": "openai",
+            #     "config": {
+            #         "model": "text-embedding-3-small"  # or "text-embedding-3-large"
+            #     }
+            # }
         )
 
     # To learn more about structured task outputs,
@@ -51,7 +49,6 @@ class Emailcrew():
         return Task(
             config=self.tasks_config['email_task'], # type: ignore[index]
         )
-
 
 
     @crew
@@ -65,19 +62,6 @@ class Emailcrew():
             tasks=self.tasks, # Automatically created by the @task decorator
             process=Process.sequential,
             verbose=True,
-            # embedder={
-            #     "api_key": "OPENAI_API_KEY",  # Optional: override env var
-            #     "provider": "openai",
-            #     "config": {
-            #         "model": "text-embedding-3-small"  # or "text-embedding-3-large"
-            #     }
-            # }
-            # embedder={
-            #     "provider": "google",
-            #     "config": {
-            #         "api_key": "GEMINI_API_KEY",
-            #         "model": "text-embedding-004"  # or "text-embedding-preview-0409"
-            #     }
-            # }
+
             # process=Process.hierarchical, # In case you wanna use that instead https://docs.crewai.com/how-to/Hierarchical/
         )

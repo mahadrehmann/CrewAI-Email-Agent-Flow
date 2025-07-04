@@ -6,6 +6,11 @@ email_task:
   expected_output: >
     An email with proper formatting for {topic}, which will be sent on {application}. 
     At the end it will have my signature:{my_signature}
+    Return only a valid JSON object that strictly follows this structure: {syntax}
+    Do not include any extra text, markdown formatting (like ```json), or explanation.
+    Just return a clean, parsable JSON object as output that can be directly sent via Microsoft Graph API.
+    Your response **must not include** markdown fences, comments, or extra explanation.
+    Output should be a **pure JSON object**, ready to be parsed by `json.loads()`.
   agent: email_writer
 
 
