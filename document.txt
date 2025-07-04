@@ -1,0 +1,46 @@
+Today I studied CrewAi, in which i looked at these:
+
+crewAI is built on top of LangChain with a modular design principle in mind. Its main components consist of agents, tools, tasks, processes and crews.
+
+crewAI facilitates agent collaboration by allowing users to assemble agents into teams, or crews that work to execute a common goal or task.
+
+crewAI offers autonomous behavior through its hierarchical process that uses an autonomously generated manager agent
+
+Agent attributes
+The agent's goals and characteristics are defined by attributes. crewAI's agents have three main attributes role, goal and backstory.
+For example, an instantiation of an agent in crewAI may look like this:
+
+    agent = Agent(
+         role= 'Customer Support',
+         goal= 'Handles customer inqueries and problems',
+         backstory= 'You are a customer support specialist for a chain restaurant. You are responsible for handling customer calls and providing
+         customer support and inputting feedback data.'
+         )
+
+Tools:         
+The crewAI Toolkit contains a suite of search tools that use the Retrieval-Augmented Generation (RAG) methodology within different sources. A few examples include:
+
+JSONSearchTool: Perform precision searches within JSON files.
+GithubSearchTool: Search within GitHub repositories.
+YouTubeChannelSearchTool: Search within YouTube channels.
+
+Task:
+Here is an example of a task:
+
+data_collection = Task(
+     description= "Gather data from customer interactions, transaction history, and support tickets"
+     expected_output= "An organized collection of data that can be preprocessed",
+     agent=data_science_agent,
+
+)
+
+Crews:
+Here is an example of a crew consisting of two agents with the goal of working together to collect and organize customer support data:
+
+my_crew = Crew(
+    agents=[data_science_agent, customer_support_agent],
+    tasks=[customer_support_task, data_collection_task],
+    process=Process.sequential,
+    full_output=True,
+    verbose=True,
+)

@@ -1,11 +1,28 @@
 import os
+import base64
 import requests
 from msal import PublicClientApplication, SerializableTokenCache
 from dotenv import load_dotenv
 import os
 
+def attach_attachment(file_path):
+    if not os.path.exists(file_path):
+        print('file not found')
+        return
+    
+    with open(file_path, 'rb') as upload:
+        media_content = base64.b64encode(upload.read())
 
-def send_mail(message):
+    data_body = {
+        '@odata.type': '#microsoft.graph.fileAttachment',
+        'contentBytes': media_content.decode('utf-8'),
+        'name': os.path.basename(file_path)
+    }
+    return data_body
+
+
+def send_mail(message, file_name=""):
+    
     load_dotenv()
 
     client_id = os.getenv("CLIENT_ID")
@@ -55,6 +72,16 @@ def send_mail(message):
         user_email = user_info.get("mail") or user_info.get("userPrincipalName")
         print(f"📧 Logged in as: {user_email}")
 
+        # if file is not empty, do this:
+        if file_name != "":
+            message["message"]["attachments"] = [
+                attach_attachment(file_name)
+            ]
+        # message["message"]["attachments"] = [
+        #         attach_attachment(file_name)
+        #     ]
+        
+        print("\n\n--------SENDING THIS:\n", message)
         # Send email
         send_response = requests.post(
             "https://graph.microsoft.com/v1.0/me/sendMail",
@@ -71,3 +98,68 @@ def send_mail(message):
             print(f"❌ Failed to send email: {send_response.status_code}\n{send_response.text}")
     else:
         print("❌ Failed to acquire token:", result.get("error_description"))
+
+
+
+# syntax = {
+#         "message": {
+#             "subject": "Subject Goes Here",
+#             "body": {
+#                 "contentType": "Text",
+#                 "content": "all the content of the mail"
+#             },
+
+#             "attachments": [
+#                 attach_attachment("document.txt")
+#             ],
+
+#             "toRecipients": [
+#                 {
+#                     "emailAddress": {
+#                         "address": "i220792@nu.edu.pk"
+#                     }
+#                 }
+#             ]
+#         },
+#         "saveToSentItems": "true"
+#     }
+
+# message = {
+#     "message": {
+#         "subject": "CrewAI Email Sender Implementation Complete",
+#         "body": {
+#         "contentType": "Text",
+#         "content": "all the content of the mail"
+#         },
+
+#         "toRecipients": [
+#         {
+#             "emailAddress": {
+#             "address": "i220792@nu.edu.pk"
+#             }
+#         }
+#         ]		
+#     }
+# }
+
+
+# message["message"]["attachments"] = [
+#             attach_attachment("document.txt")
+#         ]
+
+# import pprint
+# pprint.pprint(syntax)
+# print("\n---------------------------------------------------------------------\n")
+# pprint.pprint(message)
+
+
+# # print(message)
+# send_mail(message)
+
+# def okko():
+#     return "OKOK")
+
+# message ["mahad"] = [
+#             okko()
+#         ],
+# print("okok\n\n",message)
