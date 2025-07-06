@@ -2,16 +2,11 @@ from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from typing import List
-# If you want to run a snippet of code before or after the crew starts,
-# you can use the @before_kickoff and @after_kickoff decorators
-# https://docs.crewai.com/concepts/crews#example-crew-class-with-decorators
-
+from send_outlook_email import convert_to_txt
 from crewai.knowledge.source.text_file_knowledge_source import TextFileKnowledgeSource
-# text_source = TextFileKnowledgeSource(
-#     file_paths=["document.txt", "user_preferences.txt"]
-# )
-
+import os
 from dotenv import load_dotenv
+
 load_dotenv()
 
 @CrewBase
@@ -29,16 +24,21 @@ class Emailcrew():
     # https://docs.crewai.com/concepts/agents#agent-tools
     @agent
     def email_writer(self) -> Agent:
+
+        txt_path = convert_to_txt("knowledge/attachment.docx")        # yields "knowledge/attachment.txt"
+        fname    = os.path.basename(txt_path)                       # just "attachment.txt"
+        text_source = TextFileKnowledgeSource(file_paths=[fname])   # CrewAI will look under knowledge/attachment.txt
+
         return Agent(
             config=self.agents_config['email_writer'], # type: ignore[index]
             verbose=True,
-            # knowledge_sources=[text_source], # Agent-specific knowledge
-            # embedder={
-            #     "provider": "openai",
-            #     "config": {
-            #         "model": "text-embedding-3-small"  # or "text-embedding-3-large"
-            #     }
-            # }
+            knowledge_sources=[text_source], # Agent-specific knowledge
+            embedder={
+                "provider": "openai",
+                "config": {
+                    "model": "text-embedding-3-small"  # or "text-embedding-3-large"
+                }
+            }
         )
 
     # To learn more about structured task outputs,

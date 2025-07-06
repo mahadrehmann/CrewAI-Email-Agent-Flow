@@ -31,6 +31,7 @@ def run():
                 "toRecipients": [
                     {
                         "emailAddress": {
+                            # "address": "faizan.wasif@bluescarf.ai"
                             "address": "i220792@nu.edu.pk"
                         }
                     }
@@ -40,13 +41,14 @@ def run():
         }                            
 
 
-    onedrive_file_path = quote("/Email Agent File/Transformers Architecture to a kid.docx")
+    onedrive_file_path = quote("/Email Agent File/user_preference.txt")
+    # onedrive_file_path = quote("/Email Agent File/Transformers Architecture to a kid.docx")
     
     inputs = {
-        'topic': 'Two Clown Brothers had a fight',
+        'topic': 'Funny email about Sir Theodore the Third passing his Knight Status to Ashfaq who lives down the street',
         'my_name': 'Mahad Rehman',
         'my_signature': 'Computer Science Department\nFAST NUCES Islamabad',
-        'recipient_name': 'Sir Faizan the Great',
+        'recipient_name': 'Monseur Madam',
         'colleague_name': 'Sherlock Holmes' ,
         'colleague_number' : '+92 123456789',
         'current_date': str(datetime.now()),

@@ -4,6 +4,32 @@ import requests
 from msal import PublicClientApplication, SerializableTokenCache
 from dotenv import load_dotenv
 import re
+from docx import Document
+from PyPDF2 import PdfReader
+
+def convert_to_txt(input_path: str, output_dir: str = "knowledge") -> str:
+    """Converts .docx or .pdf file to .txt, returns path to .txt file."""
+    os.makedirs(output_dir, exist_ok=True)
+    base_name = os.path.splitext(os.path.basename(input_path))[0]
+    output_path = os.path.join(output_dir, f"{base_name}.txt")
+
+    ext = input_path.lower().split(".")[-1]
+
+    if ext == "docx":
+        doc = Document(input_path)
+        text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
+    elif ext == "pdf":
+        reader = PdfReader(input_path)
+        text = "\n".join([page.extract_text() for page in reader.pages if page.extract_text()])
+    elif ext == "txt":
+        return input_path  # Already text
+    else:
+        raise ValueError(f"Unsupported file type: {ext}")
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(text)
+
+    return output_path
 
 def attach_attachment(file_path):
     if not os.path.exists(file_path):
@@ -77,9 +103,6 @@ def send_mail(message, file_name=""):
             message["message"]["attachments"] = [
                 attach_attachment(file_name)
             ]
-        # message["message"]["attachments"] = [
-        #         attach_attachment(file_name)
-        #     ]
         
         print("\n\n--------SENDING THIS:\n", message)
         # Send email
