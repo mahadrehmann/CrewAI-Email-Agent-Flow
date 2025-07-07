@@ -7,6 +7,20 @@ email_task:
     Make sure to write it in a well structured manner, the date is {current_date}, My name is {my_name}, recipient's name is {recipient_name}.
     Use these if applicable: Colleague Name: {colleague_name}, colleague's phone number: {colleague_number}.
 
+    You are writing a weekly progress update email about {topic} from {my_name} to {recipient_name}. 
+    Use the contents of the attached document (provided in the knowledge source) as your primary context. 
+    This document contains detailed information about {my_name}'s weekly work activities, accomplishments, tasks, and any notable updates.
+    
+    Your task is to:
+    - Carefully read and summarize the content of the document.
+    - Extract key work activities and organize them clearly in the email.
+    - Explain what was done, what progress was made, and any important context that the recipient should be aware of.
+    - Maintain a formal, respectful tone suitable for emailing a supervisor.
+    - Clearly mention the current date: {current_date}.
+    - End the email with a polite closing and signature: {my_signature}.
+    - Mention any colleagues involved if relevant, such as {colleague_name} and their contact {colleague_number}.
+
+    Do **not** invent or assume details. Only use what is present in the document.
 
   expected_output: >
     An email with proper formatting for {topic}, which will be sent on {application}. 
@@ -16,6 +30,8 @@ email_task:
     Just return a clean, parsable JSON object as output that can be directly sent via Microsoft Graph API.
     Your response **must not include** markdown fences, comments, or extra explanation.
     Output should be a **pure JSON object**, ready to be parsed by `json.loads()`.
+    Ensure the content reflects the actual content of the attached document — do not use placeholders like [Update 1] or [Document Name].
+
   agent: email_writer
 
 
