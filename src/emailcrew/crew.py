@@ -24,20 +24,12 @@ class Emailcrew():
     # https://docs.crewai.com/concepts/agents#agent-tools
     @agent
     def email_writer(self) -> Agent:
-
-        txt_path = convert_to_txt("knowledge/attachment.docx")        # yields "knowledge/attachment.txt"
-        fname    = os.path.basename(txt_path)                       # just "attachment.txt"
-        text_source = TextFileKnowledgeSource(file_paths=[fname])   # CrewAI will look under knowledge/attachment.txt
-
         return Agent(
-            config=self.agents_config['email_writer'], # type: ignore[index]
+            config=self.agents_config['email_writer'],
             verbose=True,
-            knowledge_sources=[text_source], # Agent-specific knowledge
             embedder={
                 "provider": "openai",
-                "config": {
-                    "model": "text-embedding-3-small"  # or "text-embedding-3-large"
-                }
+                "config": {"model": "text-embedding-3-small"}
             }
         )
 

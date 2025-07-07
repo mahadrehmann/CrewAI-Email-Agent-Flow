@@ -74,11 +74,18 @@ def send_mail(message, file_name=""):
         result = app.acquire_token_silent(scopes, account=accounts[0])
     else:
         # Fallback to device flow login
-        flow = app.initiate_device_flow(scopes=scopes)
+        # flow = app.initiate_device_flow(scopes=scopes)
+        flow = app.initiate_device_flow(scopes=scopes, extra_query_parameters={"prompt": "consent"})
+
+        print("Flow created:", flow)
+
+
         if "user_code" not in flow:
             raise Exception("Failed to create device flow")
         print(f"\nPlease go to {flow['verification_uri']} and enter the code: {flow['user_code']}\n")
         result = app.acquire_token_by_device_flow(flow)
+
+    print("RESULT after device flow:", result)
 
     # Save token cache to file
     with open("token_cache.bin", "w") as f:
@@ -123,10 +130,9 @@ def send_mail(message, file_name=""):
         print("❌ Failed to acquire token:", result.get("error_description"))
 
 
-
 def download_file_from_onedrive(one_drive_file_path):
     load_dotenv()
-
+    new_filename = ""
     client_id = os.getenv("CLIENT_ID")
     authority = os.getenv("AUTHORITY")
     scopes = os.getenv("SCOPES", "").split()
@@ -138,66 +144,87 @@ def download_file_from_onedrive(one_drive_file_path):
     app = PublicClientApplication(client_id=client_id, authority=authority, token_cache=cache)
 
     accounts = app.get_accounts()
+    # if accounts:
+    #     result = app.acquire_token_silent(scopes, account=accounts[0])
+    # else:
+    #     flow = app.initiate_device_flow(scopes=scopes)
+    #     print(f"Please go to {flow['verification_uri']} and enter the code: {flow['user_code']}")
+    #     result = app.acquire_token_by_device_flow(flow)
+    result = None
     if accounts:
         result = app.acquire_token_silent(scopes, account=accounts[0])
-    else:
+
+    if not result:
         flow = app.initiate_device_flow(scopes=scopes)
-        print(f"Please go to {flow['verification_uri']} and enter the code: {flow['user_code']}")
+        if "user_code" not in flow:
+            raise Exception("Failed to create device flow")
+        print(f"\n🔐 Please go to {flow['verification_uri']} and enter the code: {flow['user_code']}")
         result = app.acquire_token_by_device_flow(flow)
 
     with open("token_cache.bin", "w") as f:
         f.write(cache.serialize())
 
-    if "access_token" in result:
-        access_token = result["access_token"]
-        headers = {
-            "Authorization": f"Bearer {access_token}"
-        }
+    # if "access_token" in result:
+    #     # If MSAL failed, result may be None or missing keys
+    if not result:
+        print("❌ MSAL returned no result; authentication failed.")
+        print("Full result object:", result)
+        return ""                     # or raise RuntimeError
 
-        print("Scopes granted in token:", result.get("scope"))
+    if "access_token" not in result:
+        print("❌ Failed to acquire token.")
+        print("Error:", result.get("error"))
+        print("Description:", result.get("error_description"))
+        print("Scopes:", scopes)
+        return ""
+ 
+        
+    access_token = result["access_token"]
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
 
-        onedrive_file_path = one_drive_file_path
+    print("Scopes granted in token:", result.get("scope"))
 
-        # Construct URL
-        url = f"https://graph.microsoft.com/v1.0/me/drive/root:{onedrive_file_path}:/content"
+    onedrive_file_path = one_drive_file_path
 
-        # Download the file content
-        response = requests.get(url, headers=headers)
+    # Construct URL
+    url = f"https://graph.microsoft.com/v1.0/me/drive/root:{onedrive_file_path}:/content"
 
-        if response.status_code == 200:
-            # Ensure the folder exists
-            knowledge_dir = os.path.join(os.getcwd(), "knowledge")
-            os.makedirs(knowledge_dir, exist_ok=True)
+    # Download the file content
+    response = requests.get(url, headers=headers)
 
-            # Try to get original filename from the response header
-            content_disp = response.headers.get("Content-Disposition", "")
-            match = re.search(r'filename="(.+?)"', content_disp)
+    if response.status_code == 200:
+        # Ensure the folder exists
+        knowledge_dir = os.path.join(os.getcwd(), "knowledge")
+        os.makedirs(knowledge_dir, exist_ok=True)
 
-            if match:
-                original_filename = match.group(1)
-                extension = os.path.splitext(original_filename)[1]  # e.g., '.pdf', '.txt'
-            else:
-                extension = ""  # fallback if no filename in headers
+        # Try to get original filename from the response header
+        content_disp = response.headers.get("Content-Disposition", "")
+        match = re.search(r'filename="(.+?)"', content_disp)
 
-            # Set the full path with the new filename while keeping original extension
-            new_filename = f"attachment{extension}"
-            local_file_path = os.path.join(knowledge_dir, new_filename)
-
-            # Save the file
-            with open(local_file_path, "wb") as f:
-                f.write(response.content)
-
-            print(f"✅ File downloaded and saved to: {local_file_path}")
+        if match:
+            original_filename = match.group(1)
+            extension = os.path.splitext(original_filename)[1]  # e.g., '.pdf', '.txt'
         else:
-            print(f"❌ Failed to download file: {response.status_code}")
-            print(response.text)
+            extension = ""  # fallback if no filename in headers
 
+        # Set the full path with the new filename while keeping original extension
+        new_filename = f"attachment{extension}"
+        local_file_path = os.path.join(knowledge_dir, new_filename)
 
+        # Save the file
+        with open(local_file_path, "wb") as f:
+            f.write(response.content)
+
+        print(f"✅ File downloaded and saved to: {local_file_path}")
     else:
-        print("❌ Failed to authenticate:", result.get("error_description"))
+        print(f"❌ Failed to download file: {response.status_code}")
+        print(response.text)
+
+
+    # else:
+    #     print("❌ Failed to authenticate:", result.get("error_description"))
 
     return new_filename
 
-# print("\n------------------------------\nbismillah\n")     
-# this = download_file_from_onedrive()   
-# print("the file is", this)

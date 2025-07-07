@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 import sys
 import warnings
-
 from datetime import datetime
-
 from emailcrew.crew import Emailcrew
+# from urllib.parse import quote
+from crewai.knowledge.source.text_file_knowledge_source import TextFileKnowledgeSource
 from send_outlook_email import *
-from urllib.parse import quote
+import ast
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
@@ -41,14 +41,19 @@ def run():
         }                            
 
 
-    onedrive_file_path = quote("/Email Agent File/user_preference.txt")
+    # onedrive_file_path = "/Email Agent File/attachment.docx"
+    onedrive_file_path = "/Email Agent File/document.txt"
+    # onedrive_file_path = "/Email Agent File/user_preference.txt"
+    # onedrive_file_path = "/Email Agent File/Transformers Architecture to a kid.docx"
+    # onedrive_file_path = quote("/Email Agent File/attachment.txt")
+    # onedrive_file_path = quote("/Email Agent File/user_preference.txt")
     # onedrive_file_path = quote("/Email Agent File/Transformers Architecture to a kid.docx")
     
     inputs = {
-        'topic': 'Funny email about Sir Theodore the Third passing his Knight Status to Ashfaq who lives down the street',
+        'topic': 'Email Providing Updates on the document',
         'my_name': 'Mahad Rehman',
         'my_signature': 'Computer Science Department\nFAST NUCES Islamabad',
-        'recipient_name': 'Monseur Madam',
+        'recipient_name': 'Sir Faizan',
         'colleague_name': 'Sherlock Holmes' ,
         'colleague_number' : '+92 123456789',
         'current_date': str(datetime.now()),
@@ -58,36 +63,58 @@ def run():
     }
     
     try:
-        final_answer = Emailcrew().crew().kickoff(inputs=inputs)
-        print("\nFinal Answer:\n")
-        print(final_answer, type(final_answer))
+        # 1️⃣ Download the file from OneDrive
+        onedrive_file = download_file_from_onedrive(onedrive_file_path)
+        if not onedrive_file:
+            raise RuntimeError("Download failed")
 
-        import re, ast
+        # 2️⃣ Store just the filename in inputs for the agent to see
+        inputs["attachment_name"] = onedrive_file
 
-        # 1. Get the raw repr
-        raw = str(final_answer)
+        # 3️⃣ Convert docx/pdf to txt
+        attachment_file = os.path.join(os.getcwd(), "knowledge", onedrive_file)
+        txt_file = convert_to_txt(attachment_file)
+        # txt_path = os.path.abspath(txt_file)
+        # txt_path = os.path.relpath(txt_file, os.path.join(os.getcwd(), "knowledge"))
 
-        # 2. Strip any markdown fences like ```json … ```
-        #    This regex pulls out the {...} block
+        # 4️⃣ Create the knowledge source
+        relative_path = os.path.relpath(txt_file, os.path.join(os.getcwd(), "knowledge"))
+        knowledge_source = TextFileKnowledgeSource(file_paths=[relative_path])
+        print("📄 Text file generated:", txt_file)
+        print("📄 Relative path used for CrewAI:", relative_path)
+        print("📂 Current working directory:", os.getcwd())
+
+        # knowledge_source = TextFileKnowledgeSource(file_paths=[txt_path])
+
+        # 5️⃣ Create the crew
+        crew_obj = Emailcrew()
+        crew = crew_obj.crew()
+
+        # 6️⃣ Manually inject knowledge source
+        if crew.agents[0].knowledge is None:
+            crew.agents[0].knowledge = []
+            print("ITS EMPTY MY MAN")
+
+        crew.agents[0].knowledge = [knowledge_source]
+        print("🧠 Agent knowledge sources:", crew.agents[0].knowledge)
+
+        # 7️⃣ Run the crew
+        result = crew.kickoff(inputs=inputs)
+
+        # 4️⃣ Extract the JSON payload from CrewOutput
+        raw = str(result)
         m = re.search(r"\{(?:.|\s)*\}", raw)
         if not m:
             raise ValueError("No dict literal found in CrewOutput")
+        email_payload = ast.literal_eval(m.group(0))
 
-        dict_str = m.group(0)
-
-        # 3. Safely evaluate the Python literal into a dict
-        email_payload = ast.literal_eval(dict_str)
-        # print("Final JSON is", email_payload)
-
-        #get the file from one drive
-        onedrive_file = download_file_from_onedrive(onedrive_file_path)
-        attachment_file= f"D:\\Codes\\BlueScarf\\Python3.11\\emailcrew\\knowledge\\{onedrive_file}"
-
-        # Sendin the mail
+        # 5️⃣ Send the email, attaching the original downloaded file
+        attachment_file = os.path.join(os.getcwd(), "knowledge", onedrive_file)
         send_mail(email_payload, attachment_file)
 
     except Exception as e:
         raise Exception(f"An error occurred while running the crew: {e}")
+
 
 
 def train():
