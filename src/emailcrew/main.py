@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 import sys
+import os
 import warnings
+
+import logging
+logging.getLogger("crewai").setLevel(logging.DEBUG)
+
 from datetime import datetime
 from emailcrew.crew import Emailcrew
 # from urllib.parse import quote
@@ -50,7 +55,7 @@ def run():
     # onedrive_file_path = quote("/Email Agent File/Transformers Architecture to a kid.docx")
     
     inputs = {
-        'topic': 'Email Providing Updates on the document',
+        'topic': 'Providing update and explanation of the document',
         'my_name': 'Mahad Rehman',
         'my_signature': 'Computer Science Department\nFAST NUCES Islamabad',
         'recipient_name': 'Sir Faizan',
@@ -79,7 +84,14 @@ def run():
 
         # 4️⃣ Create the knowledge source
         relative_path = os.path.relpath(txt_file, os.path.join(os.getcwd(), "knowledge"))
-        knowledge_source = TextFileKnowledgeSource(file_paths=[relative_path])
+        # knowledge_source = TextFileKnowledgeSource(file_paths=[relative_path])
+        
+        # knowledge_source = TextFileKnowledgeSource(
+        #     file_paths=[relative_path],
+        #     chunk_size=150,  # Trying smaller chunks
+        #     chunk_overlap=50
+        # )        
+
         print("📄 Text file generated:", txt_file)
         print("📄 Relative path used for CrewAI:", relative_path)
         print("📂 Current working directory:", os.getcwd())
@@ -87,16 +99,15 @@ def run():
         # knowledge_source = TextFileKnowledgeSource(file_paths=[txt_path])
 
         # 5️⃣ Create the crew
-        crew_obj = Emailcrew()
+        crew_obj = Emailcrew(relative_path)
         crew = crew_obj.crew()
 
-        # 6️⃣ Manually inject knowledge source
-        if crew.agents[0].knowledge is None:
-            crew.agents[0].knowledge = []
-            print("ITS EMPTY MY MAN")
+        # crew.agents[0].knowledge = knowledge_source
+        # print("🧠 Agent knowledge sources:", crew.agents[0].knowledge)
+        ks = crew_obj.knowledge_source
+        print("🧠 Agent knowledge sources:", ks)
+        print("🧩 Final chunk count:", len(ks.chunks))
 
-        crew.agents[0].knowledge = [knowledge_source]
-        print("🧠 Agent knowledge sources:", crew.agents[0].knowledge)
 
         # 7️⃣ Run the crew
         result = crew.kickoff(inputs=inputs)

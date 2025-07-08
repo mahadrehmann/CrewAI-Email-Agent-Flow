@@ -1,14 +1,8 @@
 email_task:
   description: >
-    Write an email about {topic}. 
-    Based on the document provided in the knowledge source (e.g. attachment.txt or .docx),
-    write a personalized email summarizing the key points of the document,
-    explaining what it is about, and why it is relevant to the recipient.
-    Make sure to write it in a well structured manner, the date is {current_date}, My name is {my_name}, recipient's name is {recipient_name}.
-    Use these if applicable: Colleague Name: {colleague_name}, colleague's phone number: {colleague_number}.
-
     You are writing a weekly progress update email about {topic} from {my_name} to {recipient_name}. 
     Use the contents of the attached document (provided in the knowledge source) as your primary context. 
+    The content of this document has been loaded as your knowledge base — make sure you reference and summarize it accurately.
     This document contains detailed information about {my_name}'s weekly work activities, accomplishments, tasks, and any notable updates.
     
     Your task is to:
@@ -19,6 +13,7 @@ email_task:
     - Clearly mention the current date: {current_date}.
     - End the email with a polite closing and signature: {my_signature}.
     - Mention any colleagues involved if relevant, such as {colleague_name} and their contact {colleague_number}.
+    - Carefully read and *quote key sentences* or *paraphrase small excerpts* from the document with citation headers like “[From document:] …”
 
     Do **not** invent or assume details. Only use what is present in the document.
 

@@ -16,21 +16,24 @@ class Emailcrew():
     agents: List[BaseAgent]
     tasks: List[Task]
 
-    # Learn more about YAML configuration files here:
-    # Agents: https://docs.crewai.com/concepts/agents#yaml-configuration-recommended
-    # Tasks: https://docs.crewai.com/concepts/tasks#yaml-configuration-recommended
-    
-    # If you would like to add tools to your agents, you can learn more about it here:
-    # https://docs.crewai.com/concepts/agents#agent-tools
+    def __init__(self, rel_path=""):
+        self.knowledge_source = TextFileKnowledgeSource(
+            file_paths=[rel_path],
+            chunk_size=150,  # Trying smaller chunks
+            chunk_overlap=50
+        )        
+        
+        print("🔍 Initializing with knowledge source:", self.knowledge_source.file_paths)
+
+
+
+
     @agent
     def email_writer(self) -> Agent:
         return Agent(
             config=self.agents_config['email_writer'],
             verbose=True,
-            embedder={
-                "provider": "openai",
-                "config": {"model": "text-embedding-3-small"}
-            }
+            
         )
 
     # To learn more about structured task outputs,
@@ -54,6 +57,10 @@ class Emailcrew():
             tasks=self.tasks, # Automatically created by the @task decorator
             process=Process.sequential,
             verbose=True,
-
+            embedder={
+                "provider": "openai",
+                "config": {"model": "text-embedding-3-small"}
+            },
+            knowledge_sources=[self.knowledge_source]
             # process=Process.hierarchical, # In case you wanna use that instead https://docs.crewai.com/how-to/Hierarchical/
         )
