@@ -2,21 +2,18 @@
 import sys
 import os
 import warnings
-# import logging
-# logging.getLogger("crewai").setLevel(logging.DEBUG)
 import time
+import ast
+import json
 from datetime import datetime
 from emailcrew.crew import Emailcrew
 from crewai.knowledge.source.text_file_knowledge_source import TextFileKnowledgeSource
 from send_outlook_email import *
-import ast
-warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
-import json
-
 from flask import Flask, render_template, request
-app = Flask(__name__)
+warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
 
+# Function for running the crew
 def run_crew_and_send_mail(file_path = None):
     # syntax = {
     #         "message": {
@@ -63,7 +60,7 @@ def run_crew_and_send_mail(file_path = None):
 
 
     inputs = {
-        'topic': 'Someone Stole Goods from Sherlocks Holmes office',
+        'topic': 'Mr James, the old man, ironically slipped on a banana peel',
         # 'topic': 'Providing update and explanation of the document',
         'my_name': 'Mahad Rehman',
         'my_signature': 'Computer Science Department\nFAST NUCES Islamabad',
@@ -183,33 +180,33 @@ def wait_until_schedule_and_run_every_week(user_time, user_day, file_name = None
         time.sleep(30)
 
 
+import threading
+# Shared state for schedule
+_schedule_config = {}
+# Event to signal “new config submitted”
+_schedule_event = threading.Event()
+app = Flask(__name__)
+
+
 @app.route('/', methods=['GET', 'POST'])
 def schedule_email():
     if request.method == 'POST':
-        filepath = request.form['filepath']
-        day = request.form['day'].lower()
-        time = request.form['time']
+        # Populate the shared config
+        _schedule_config['filepath'] = request.form['filepath']
+        _schedule_config['day']      = request.form['day'].lower()
+        _schedule_config['time']     = request.form['time']
 
-        # Save to JSON
-        schedule_data = {
-            "filepath": filepath,
-            "day": day,
-            "time": time
-        }
-        with open("schedule_config.json", "w") as f:
-            json.dump(schedule_data, f)
+        # Signal the main thread
+        _schedule_event.set()
 
-        return f"✅ Scheduled email every {day.capitalize()} at {time} using {filepath}"
+        return f"✅ Scheduled email every {_schedule_config['day'].capitalize()} at {_schedule_config['time']} using {_schedule_config['filepath']}"
     
     return render_template('index.html')
-
-import threading
 
 def run_flask():
     app.run(debug=False, use_reloader=False)
 
 '''
-
 conda deactivate
 cd Python3.11
 conda activate venv/
@@ -217,50 +214,29 @@ cd emailcrew
 crewai run
 '''
 
-
 def run():
-    # Start Flask in a separate thread
-    flask_thread = threading.Thread(target=run_flask)
+    # 1) Start Flask in background
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
 
-    print("🌐 Flask app running in background. Waiting for schedule_config.json...")
+    print("🌐 Flask app running. Fill out the form to schedule the email.")
 
-    # Wait until user submits form
-    import time
-    while True:
-        try:
-            with open("schedule_config.json", "r") as f:
-                config = json.load(f)
-                break
-        except FileNotFoundError:
-            time.sleep(2)
+    # 2) Block here until the user submits the form
+    _schedule_event.wait()
+    print("🚦 Received new schedule configuration!")
 
-    # Extract config
-    file_path = config['filepath']
-    day = config['day']
-    schedule_time = config['time']
+    # 3) Extract the in‑memory config
+    file_path     = _schedule_config['filepath']
+    day           = _schedule_config['day']
+    schedule_time = _schedule_config['time']
 
     print("📄 File:", file_path)
     print("📅 Day:", day)
     print("⏰ Time:", schedule_time)
 
+    # 4) Now enter your weekly scheduler loop
     wait_until_schedule_and_run_every_week(schedule_time, day, file_path)
-
-# def run():
-#     """
-#     Run the crew.
-#     """
-#     app.run(debug=True)
-
-
-#     print("🗓️ Please input the day and time to schedule the weekly email.")
-#     user_day = input("Enter the day of the week (e.g., Monday): ").strip().lower()
-#     user_time = input("Enter the time in 24-hour format (HH:MM): ").strip()
-
-#     file_name="/Email Agent File/document.txt"
-#     wait_until_schedule_and_run_every_week(user_time, user_day, file_name)
-
-    
+   
 
 def train():
     """
