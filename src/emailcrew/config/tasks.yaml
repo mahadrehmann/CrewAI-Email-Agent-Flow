@@ -6,10 +6,7 @@ email_task:
     This document contains detailed information about {my_name}'s weekly work activities, accomplishments, tasks, and any notable updates.
     
     Your task is to:
-    - Carefully read and summarize the content of the document.
-    - Extract key work activities and organize them clearly in the email.
-    - Explain what was done, what progress was made, and any important context that the recipient should be aware of.
-    - Maintain a formal, respectful tone suitable for emailing a supervisor.
+    - Explain the thing in a light funny tone
     - Clearly mention the current date: {current_date}.
     - End the email with a polite closing and signature: {my_signature}.
     - Mention any colleagues involved if relevant, such as {colleague_name} and their contact {colleague_number}.

@@ -25,20 +25,20 @@ class Emailcrew():
         
         print("🔍 Initializing with knowledge source:", self.knowledge_source.file_paths)
 
-
-
-
     @agent
     def email_writer(self) -> Agent:
         return Agent(
             config=self.agents_config['email_writer'],
             verbose=True,
+            # knowledge_sources=[self.knowledge_source],
+
+            # embedder={
+            #     "provider": "openai",
+            #     "config": {"model": "text-embedding-3-small"}
+            # },
             
         )
 
-    # To learn more about structured task outputs,
-    # task dependencies, and task callbacks, check out the documentation:
-    # https://docs.crewai.com/concepts/tasks#overview-of-a-task
     @task
     def email_task(self) -> Task:
         return Task(
@@ -57,10 +57,10 @@ class Emailcrew():
             tasks=self.tasks, # Automatically created by the @task decorator
             process=Process.sequential,
             verbose=True,
-            embedder={
-                "provider": "openai",
-                "config": {"model": "text-embedding-3-small"}
-            },
-            knowledge_sources=[self.knowledge_source]
+            # embedder={  # ⚙️ Required for agent-level knowledge to be embedded
+            #     "provider": "openai",
+            #     "config": {"model": "text-embedding-3-small"}
+            # }
+            
             # process=Process.hierarchical, # In case you wanna use that instead https://docs.crewai.com/how-to/Hierarchical/
         )
