@@ -4,6 +4,8 @@ from django.contrib import admin
 from django.urls import path
 from scheduler import views as scheduler_views
 from django.contrib.auth import views as auth_views
+from scheduler.auth_views import authorize, callback
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -19,4 +21,7 @@ urlpatterns = [
 
     # Root must be ONLY this:
     path('', scheduler_views.schedule_create, name='schedule_create'),
+
+     path('auth/login/',  authorize, name='authorize'),
+     path('auth/callback/', callback,  name='auth_callback'),
 ]

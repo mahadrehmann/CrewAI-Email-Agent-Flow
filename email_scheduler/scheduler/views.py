@@ -18,6 +18,13 @@ from emailcrew.main import run, set_schedule_config
 import datetime as dt
 
 
+'''
+conda deactivate
+cd emailcrew
+conda activate venv/
+cd email_scheduler
+'''
+
 # Start the background scheduler loop once
 if not hasattr(run, "_started"):
     threading.Thread(target=run, daemon=True).start()
