@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 import re
 from docx import Document
 from PyPDF2 import PdfReader
+import urllib.parse
+
 
 def convert_to_txt(input_path: str, output_dir: str = "knowledge") -> str:
     """Converts .docx or .pdf file to .txt, returns path to .txt file."""
@@ -130,7 +132,12 @@ def send_mail(message, file_name=""):
         print("❌ Failed to acquire token:", result.get("error_description"))
 
 
-def download_file_from_onedrive(one_drive_file_path):
+def make_shares_api_url(shared_url: str) -> str:
+    # Graph wants the URL base64‐URL‐encoded without padding:
+    b64 = base64.urlsafe_b64encode(shared_url.encode("utf-8")).decode("utf-8").rstrip("=")
+    return f"https://graph.microsoft.com/v1.0/shares/u!{b64}/driveItem/content"
+
+def download_file_from_onedrive(shared_onedrive_url):
     load_dotenv()
     new_filename = ""
     client_id = os.getenv("CLIENT_ID")
@@ -158,8 +165,6 @@ def download_file_from_onedrive(one_drive_file_path):
     with open("token_cache.bin", "w") as f:
         f.write(cache.serialize())
 
-    # if "access_token" in result:
-    #     # If MSAL failed, result may be None or missing keys
     if not result:
         print("❌ MSAL returned no result; authentication failed.")
         print("Full result object:", result)
@@ -177,37 +182,27 @@ def download_file_from_onedrive(one_drive_file_path):
     headers = {
         "Authorization": f"Bearer {access_token}"
     }
-
     print("Scopes granted in token:", result.get("scope"))
 
-    onedrive_file_path = one_drive_file_path
-
-    # Construct URL
-    url = f"https://graph.microsoft.com/v1.0/me/drive/root:{onedrive_file_path}:/content"
-
-    # Download the file content
+    url = make_shares_api_url(shared_onedrive_url)
     response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
-        # Ensure the folder exists
         knowledge_dir = os.path.join(os.getcwd(), "knowledge")
         os.makedirs(knowledge_dir, exist_ok=True)
 
-        # Try to get original filename from the response header
         content_disp = response.headers.get("Content-Disposition", "")
         match = re.search(r'filename="(.+?)"', content_disp)
 
         if match:
             original_filename = match.group(1)
-            extension = os.path.splitext(original_filename)[1]  # e.g., '.pdf', '.txt'
+            extension = os.path.splitext(original_filename)[1]
         else:
-            extension = ""  # fallback if no filename in headers
+            extension = ""
 
-        # Set the full path with the new filename while keeping original extension
         new_filename = f"attachment{extension}"
         local_file_path = os.path.join(knowledge_dir, new_filename)
 
-        # Save the file
         with open(local_file_path, "wb") as f:
             f.write(response.content)
 
@@ -215,9 +210,5 @@ def download_file_from_onedrive(one_drive_file_path):
     else:
         print(f"❌ Failed to download file: {response.status_code}")
         print(response.text)
-
-
-    # else:
-    #     print("❌ Failed to authenticate:", result.get("error_description"))
 
     return new_filename
