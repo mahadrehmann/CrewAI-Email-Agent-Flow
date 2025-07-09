@@ -14,7 +14,7 @@ warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
 
 # Function for running the crew
-def run_crew_and_send_mail(file_path = None):
+def run_crew_and_send_mail(receiver, file_path = None):
     # syntax = {
     #         "message": {
     #             "subject": "Subject Goes Here",
@@ -44,8 +44,8 @@ def run_crew_and_send_mail(file_path = None):
             "toRecipients": [
                 {
                     "emailAddress": {
-                        "address": "i220792@nu.edu.pk"
-                        # "address": "faizan.wasif@bluescarf.ai"
+                        "address": receiver
+
                     }
                 }
             ]
@@ -56,15 +56,15 @@ def run_crew_and_send_mail(file_path = None):
     if file_path:
         onedrive_file_path = file_path
     else:
-        onedrive_file_path = "/Email Agent File/document.txt"
+        onedrive_file_path = "/Email Agent File/user_preference.txt"
 
 
     inputs = {
-        'topic': 'Mr James, the old man, ironically slipped on a banana peel',
-        # 'topic': 'Providing update and explanation of the document',
+        'topic': 'Providing update and explanation of the document',
+        # 'topic': 'Mahad is studying agentic Ai',
         'my_name': 'Mahad Rehman',
         'my_signature': 'Computer Science Department\nFAST NUCES Islamabad',
-        'recipient_name': 'Sir Faizan',
+        'recipient_name': 'Sir',
         'colleague_name': 'Sherlock Holmes' ,
         'colleague_number' : '+92 123456789',
         'current_date': str(datetime.now()),
@@ -93,7 +93,12 @@ def run_crew_and_send_mail(file_path = None):
         print("📄 Relative path used for CrewAI:", relative_path)
         print("📂 Current working directory:", os.getcwd())
 
-        # knowledge_source = TextFileKnowledgeSource(file_paths=[txt_path])
+        file_object = open(txt_file, "r")
+        content = file_object.read()
+        # lines = file_object.readlines()
+        
+        inputs["attachment_content"] = content
+
 
         # Create the crew
         crew_obj = Emailcrew(relative_path)
@@ -140,7 +145,7 @@ def run_crew_and_send_mail(file_path = None):
 
 
 # Schedule Fnuction
-def wait_until_schedule_and_run_every_week(user_time, user_day, file_name = None):
+def wait_until_schedule_and_run_every_week(user_time, user_day, file_name = None, receiver="i220792@nu.edu.pk"):
 
     days_map = {
         'monday': 0, 'tuesday': 1, 'wednesday': 2,
@@ -172,7 +177,7 @@ def wait_until_schedule_and_run_every_week(user_time, user_day, file_name = None
         if is_target_day and is_target_time:
             if not already_sent_today:
                 print(f"🚀 Running the crew at {now}")
-                run_crew_and_send_mail(file_name)
+                run_crew_and_send_mail(receiver, file_name)
                 already_sent_today = True
         else:
             already_sent_today = False  # Reset flag when it's not the scheduled time
@@ -192,6 +197,7 @@ app = Flask(__name__)
 def schedule_email():
     if request.method == 'POST':
         # Populate the shared config
+        _schedule_config['receiver'] = request.form['receiver']
         _schedule_config['filepath'] = request.form['filepath']
         _schedule_config['day']      = request.form['day'].lower()
         _schedule_config['time']     = request.form['time']
@@ -226,6 +232,7 @@ def run():
     print("🚦 Received new schedule configuration!")
 
     # 3) Extract the in‑memory config
+    receiver     = _schedule_config['receiver']
     file_path     = _schedule_config['filepath']
     day           = _schedule_config['day']
     schedule_time = _schedule_config['time']
@@ -235,7 +242,7 @@ def run():
     print("⏰ Time:", schedule_time)
 
     # 4) Now enter your weekly scheduler loop
-    wait_until_schedule_and_run_every_week(schedule_time, day, file_path)
+    wait_until_schedule_and_run_every_week(schedule_time, day, file_path, receiver)
    
 
 def train():
