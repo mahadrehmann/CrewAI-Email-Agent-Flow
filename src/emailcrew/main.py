@@ -12,28 +12,19 @@ from send_outlook_email import *
 from flask import Flask, render_template, request
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
+'''
+TODO:
+convert to django
+multi user support
+
+file path issue -> providde direct link instead
+
+User control -> Change time -> goback to main screen
+
+'''
 
 # Function for running the crew
 def run_crew_and_send_mail(receiver, file_path = None):
-    # syntax = {
-    #         "message": {
-    #             "subject": "Subject Goes Here",
-    #             "body": {
-    #                 "contentType": "Text",
-    #                 "content": "all the content of the mail"
-    #             },
-
-    #             "toRecipients": [
-    #                 {
-    #                     "emailAddress": {
-    #                         # "address": "faizan.wasif@bluescarf.ai"
-    #                         "address": "i220792@nu.edu.pk"
-    #                     }
-    #                 }
-    #             ]
-    #         },
-    #         "saveToSentItems": "true"
-    #     }                            
     syntax = {
         "message": {
             "subject": "Subject Goes Here",
@@ -145,7 +136,7 @@ def run_crew_and_send_mail(receiver, file_path = None):
 
 
 # Schedule Fnuction
-def wait_until_schedule_and_run_every_week(user_time, user_day, file_name = None, receiver="i220792@nu.edu.pk"):
+def wait_until_schedule_and_run_every_week(user_time, user_day, file_name = None, receiver="i220792@nu.edu.pk", stop_event=None):
 
     days_map = {
         'monday': 0, 'tuesday': 1, 'wednesday': 2,
@@ -166,10 +157,7 @@ def wait_until_schedule_and_run_every_week(user_time, user_day, file_name = None
 
     already_sent_today = False
 
-    while True:
-        if already_sent_today:
-            print("\n---------------------------------------\nSent successfully, waiting for next week\n---------------------------------------\n")
-
+    while not (stop_event and stop_event.is_set()):
         now = datetime.now()
         is_target_day = now.weekday() == days_map[user_day]
         is_target_time = now.hour == scheduled_hour and now.minute == scheduled_minute
@@ -184,12 +172,36 @@ def wait_until_schedule_and_run_every_week(user_time, user_day, file_name = None
 
         time.sleep(30)
 
+    print("🛑 Schedule cancelled. Exiting current schedule thread.")
+
+    # while True:
+    #     if already_sent_today:
+    #         print("\n---------------------------------------\nSent successfully, waiting for next week\n---------------------------------------\n")
+
+    #     now = datetime.now()
+    #     is_target_day = now.weekday() == days_map[user_day]
+    #     is_target_time = now.hour == scheduled_hour and now.minute == scheduled_minute
+
+    #     if is_target_day and is_target_time:
+    #         if not already_sent_today:
+    #             print(f"🚀 Running the crew at {now}")
+    #             run_crew_and_send_mail(receiver, file_name)
+    #             already_sent_today = True
+    #     else:
+    #         already_sent_today = False  # Reset flag when it's not the scheduled time
+
+    #     time.sleep(30)
+
 
 import threading
 # Shared state for schedule
 _schedule_config = {}
 # Event to signal “new config submitted”
 _schedule_event = threading.Event()
+
+_current_scheduler_thread = None
+_stop_event = None
+
 app = Flask(__name__)
 
 
@@ -205,9 +217,15 @@ def schedule_email():
         # Signal the main thread
         _schedule_event.set()
 
-        return f"✅ Scheduled email every {_schedule_config['day'].capitalize()} at {_schedule_config['time']} using {_schedule_config['filepath']}"
-    
+        return render_template('confirmation.html',
+                               day=_schedule_config['day'].capitalize(),
+                               time=_schedule_config['time'],
+                               filepath=_schedule_config['filepath'])
+
     return render_template('index.html')
+    #     return f"✅ Scheduled email every {_schedule_config['day'].capitalize()} at {_schedule_config['time']} using {_schedule_config['filepath']}"
+    
+    # return render_template('index.html')
 
 def run_flask():
     app.run(debug=False, use_reloader=False)
@@ -221,28 +239,62 @@ crewai run
 '''
 
 def run():
+    global _current_scheduler_thread, _stop_event
+
     # 1) Start Flask in background
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
 
     print("🌐 Flask app running. Fill out the form to schedule the email.")
 
-    # 2) Block here until the user submits the form
-    _schedule_event.wait()
-    print("🚦 Received new schedule configuration!")
+    # # 2) Block here until the user submits the form
+    # _schedule_event.wait()
+    # print("🚦 Received new schedule configuration!")
 
-    # 3) Extract the in‑memory config
-    receiver     = _schedule_config['receiver']
-    file_path     = _schedule_config['filepath']
-    day           = _schedule_config['day']
-    schedule_time = _schedule_config['time']
+    # # 3) Extract the in‑memory config
+    # receiver     = _schedule_config['receiver']
+    # file_path     = _schedule_config['filepath']
+    # day           = _schedule_config['day']
+    # schedule_time = _schedule_config['time']
+    # print("📄 File:", file_path)
+    # print("📅 Day:", day)
+    # print("⏰ Time:", schedule_time)
+    
+    while True:
+        _schedule_event.wait()  # Wait for the form to be submitted
+        # _schedule_event.clear()  # Reset the event so it can wait for new submission again
+        print("🚦 Received new schedule configuration!")
 
-    print("📄 File:", file_path)
-    print("📅 Day:", day)
-    print("⏰ Time:", schedule_time)
+        # Cancel previous scheduler if running
+        if _stop_event is not None:
+            print("🛑 Stopping previous scheduler...")
+            _stop_event.set()  # ✅ Tell previous thread to stop
+            _current_scheduler_thread.join()  # 🔄 Wait for it to stop
 
-    # 4) Now enter your weekly scheduler loop
-    wait_until_schedule_and_run_every_week(schedule_time, day, file_path, receiver)
+        _stop_event = threading.Event()
+
+
+        # Read updated config
+        receiver      = _schedule_config['receiver']
+        file_path     = _schedule_config['filepath']
+        day           = _schedule_config['day']
+        schedule_time = _schedule_config['time']
+
+        print("📄 File:", file_path)
+        print("📅 Day:", day)
+        print("⏰ Time:", schedule_time)
+    
+        _schedule_event.clear()  # 🔄 Ready for next config
+
+        # Start a new scheduler thread
+        _current_scheduler_thread = threading.Thread(
+            target=wait_until_schedule_and_run_every_week,
+            args=(schedule_time, day, file_path, receiver, _stop_event),
+            daemon=True
+        )
+        _current_scheduler_thread.start()
+        # # 4) Now enter your weekly scheduler loop
+        # wait_until_schedule_and_run_every_week(schedule_time, day, file_path, receiver)
    
 
 def train():

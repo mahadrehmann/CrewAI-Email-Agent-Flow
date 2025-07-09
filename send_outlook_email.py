@@ -144,12 +144,6 @@ def download_file_from_onedrive(one_drive_file_path):
     app = PublicClientApplication(client_id=client_id, authority=authority, token_cache=cache)
 
     accounts = app.get_accounts()
-    # if accounts:
-    #     result = app.acquire_token_silent(scopes, account=accounts[0])
-    # else:
-    #     flow = app.initiate_device_flow(scopes=scopes)
-    #     print(f"Please go to {flow['verification_uri']} and enter the code: {flow['user_code']}")
-    #     result = app.acquire_token_by_device_flow(flow)
     result = None
     if accounts:
         result = app.acquire_token_silent(scopes, account=accounts[0])
