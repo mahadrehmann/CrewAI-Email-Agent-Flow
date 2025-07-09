@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Schedule Confirmed</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .box {
+      background-color: white;
+      color: #2c3e50;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      font-size: 22px;
+    }
+
+    p {
+      margin-bottom: 30px;
+      font-size: 16px;
+    }
+
+    a button {
+      padding: 12px 24px;
+      background-color: #667eea;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    a button:hover {
+      background-color: #5a67d8;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>✅ Email Scheduled!</h2>
+    <p>Email will be sent every <strong>{{ day }}</strong> at <strong>{{ time }}</strong><br>using file: <code>{{ filepath }}</code></p>
+    <p>Want to change the schedule?</p>
+    <a href="/"><button>Change Time</button></a>
+  </div>
+</body>
+</html>

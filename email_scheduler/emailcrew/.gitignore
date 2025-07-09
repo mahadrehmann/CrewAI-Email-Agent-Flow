@@ -1,0 +1,21 @@
+# Python virtual environment
+.venv/
+
+# Environment variables
+.env
+token_cache.bin
+
+# ChromaDB / vector DB knowledge files
+knowledge/
+
+# Bytecode
+__pycache__/
+*.py[cod]
+
+# Logs and lock files
+*.log
+uv.lock
+
+# VSCode or OS-specific files (optional)
+.vscode/
+.DS_Store

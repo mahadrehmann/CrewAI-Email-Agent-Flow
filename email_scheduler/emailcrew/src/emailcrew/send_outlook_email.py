@@ -8,6 +8,7 @@ from docx import Document
 from PyPDF2 import PdfReader
 import urllib.parse
 
+#here ehre
 
 def convert_to_txt(input_path: str, output_dir: str = "knowledge") -> str:
     """Converts .docx or .pdf file to .txt, returns path to .txt file."""
