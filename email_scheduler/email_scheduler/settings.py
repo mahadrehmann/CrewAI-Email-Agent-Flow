@@ -56,12 +56,18 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# settings.py
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'      # where to go after successful login
+LOGOUT_REDIRECT_URL = '/login/'
+
+
+
 ROOT_URLCONF = "email_scheduler.urls"
 
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        'DIRS': [BASE_DIR / 'scheduler' / 'templates'],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
