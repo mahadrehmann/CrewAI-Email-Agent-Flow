@@ -1,0 +1,10 @@
+requests
+python-docx
+PyPDF2
+APScheduler
+pysqlite3-binary
+Django
+crewai
+python-dotenv
+requests
+msal
