@@ -7,7 +7,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             "--receiver", "-r",
-            default="i220792@nu.edu.pk",
+            default=None, #Fix this
             help="Recipient email address"
         )
         parser.add_argument(

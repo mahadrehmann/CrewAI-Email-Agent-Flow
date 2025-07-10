@@ -1,12 +1,3 @@
-# from django.shortcuts import render
-# from django.http import HttpResponse
-# import sys, os, threading
-
-# # Add the emailcrew path for import
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../emailcrew/src')))
-
-# from emailcrew.main import run, _schedule_config, _schedule_event
-
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
@@ -19,10 +10,20 @@ import datetime as dt
 
 
 '''
+TODO:
+
+- User Signup Using 
+'''
+
+
+'''
 conda deactivate
 cd emailcrew
 conda activate venv/
 cd email_scheduler
+
+HOW TO RUN
+python manage.py runserver
 '''
 
 # Start the background scheduler loop once
