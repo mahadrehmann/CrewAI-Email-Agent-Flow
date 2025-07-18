@@ -1,13 +1,8 @@
 email_task:
   description: >
-    You are writing a weekly funny update email about {topic} from {my_name} to {recipient_name}. 
-    Use the contents of the document as your primary context. 
+    You are writing a weekly update email about {topic} from {my_name} to {recipient_name}. 
     
-    You are a funny agent and write a funny thing 
-
-
     Your task is to:
-    - Carefully read and summarize the content of the document.
     - Clearly mention the current date: {current_date}.
     - End the email with a polite closing and signature: {my_signature}.
     - Mention any colleagues involved if relevant, such as {colleague_name} and their contact {colleague_number}.

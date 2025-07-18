@@ -20,13 +20,14 @@ class Emailcrew():
     tasks: List[Task]
 
     def __init__(self, rel_path=""):
-        self.knowledge_source = TextFileKnowledgeSource(
-            file_paths=[rel_path],
-            chunk_size=150,  # Trying smaller chunks
-            chunk_overlap=50
-        )        
+        pass
+        # self.knowledge_source = TextFileKnowledgeSource(
+        #     file_paths=[rel_path],
+        #     chunk_size=150,  # Trying smaller chunks
+        #     chunk_overlap=50
+        # )        
         
-        print("🔍 Initializing with knowledge source:", self.knowledge_source.file_paths)
+        # print("🔍 Initializing with knowledge source:", self.knowledge_source.file_paths)
 
     @agent
     def email_writer(self) -> Agent:

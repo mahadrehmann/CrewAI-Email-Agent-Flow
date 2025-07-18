@@ -50,7 +50,7 @@ def run_crew_and_send_mail(receiver, file_path=None):
     onedrive_file_path = file_path or "https://1drv.ms/t/c/901cffeb62aca0b5/EatxEQM0bMRDhpcT5-umeF4BOxtRDKMdkxuJpe20PWyuJg?e=bLhKRV"
 
     inputs = {
-        'topic': 'email about the funny Ai drowned',
+        'topic': 'email saying look at the attachment which is the work',
         'my_name': 'Mahad Rehman',
         'my_signature': 'Computer Science Department\nFAST NUCES Islamabad',
         'recipient_name': 'Sir',
@@ -72,19 +72,19 @@ def run_crew_and_send_mail(receiver, file_path=None):
 
         inputs["attachment_name"] = onedrive_file
         attachment_file = os.path.join(os.getcwd(), "knowledge", onedrive_file)
-        txt_file = convert_to_txt(attachment_file)
 
-        relative_path = os.path.relpath(txt_file, os.path.join(os.getcwd(), "knowledge"))
+        # Summary Logic Commented
+        # txt_file = convert_to_txt(attachment_file)
 
-        with open(txt_file, "r", encoding="utf-8") as file_object:
-            content = file_object.read()
-        inputs["attachment_content"] = content
-        
-        # with open(txt_file, "r") as file_object:
+        # relative_path = os.path.relpath(txt_file, os.path.join(os.getcwd(), "knowledge"))
+
+        # with open(txt_file, "r", encoding="utf-8") as file_object:
         #     content = file_object.read()
         # inputs["attachment_content"] = content
 
-        crew_obj = Emailcrew(relative_path)
+        # crew_obj = Emailcrew(relative_path)
+
+        crew_obj = Emailcrew()
         crew = crew_obj.crew()
         result = crew.kickoff(inputs=inputs)
 
@@ -126,24 +126,49 @@ def wait_until_schedule_and_run_every_week(user_time, user_day, file_name=None, 
     print(f"✅ Scheduled to run every {user_day.capitalize()} at {user_time}")
     print("⏳ Waiting for the scheduled time. Press Ctrl+C to exit.")
 
-    already_sent_today = False
+    target_weekday = days_map[user_day.lower()]
+
+    last_run_date = None
 
     while not (stop_event and stop_event.is_set()):
         now = datetime.now()
-        is_target_day = now.weekday() == days_map[user_day]
-        is_target_time = now.hour == scheduled_hour and now.minute == scheduled_minute
+        # Check if it's the scheduled weekday and time
+        if (now.weekday() == target_weekday and
+            now.hour == scheduled_hour and
+            now.minute == scheduled_minute):
 
-        if is_target_day and is_target_time:
-            if not already_sent_today:
+            current_date = now.date()
+            # Ensure we only run once per day
+            if last_run_date != current_date:
                 print(f"🚀 Running the crew at {now}")
-                run_crew_and_send_mail(receiver, file_name)
-                already_sent_today = True
-        else:
-            already_sent_today = False
-
-        time.sleep(30)
+                try:
+                    run_crew_and_send_mail(receiver, file_name)
+                except Exception as e:
+                    print("❌ Error in scheduled run:", e)
+                last_run_date = current_date
+        # Sleep until next minute boundary to reduce wake-ups
+        sleep_seconds = 60 - now.second
+        time.sleep(sleep_seconds)
 
     print("🛑 Schedule cancelled. Exiting schedule thread.")
+    # already_sent_today = False
+
+    # while not (stop_event and stop_event.is_set()):
+    #     now = datetime.now()
+    #     is_target_day = now.weekday() == days_map[user_day]
+    #     is_target_time = now.hour == scheduled_hour and now.minute == scheduled_minute
+
+    #     if is_target_day and is_target_time:
+    #         if not already_sent_today:
+    #             print(f"🚀 Running the crew at {now}")
+    #             run_crew_and_send_mail(receiver, file_name)
+    #             already_sent_today = True
+    #     else:
+    #         already_sent_today = False
+
+    #     time.sleep(30)
+
+    # print("🛑 Schedule cancelled. Exiting schedule thread.")
 
 
 # Global schedule registry and lock
