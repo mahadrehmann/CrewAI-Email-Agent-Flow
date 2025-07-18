@@ -404,7 +404,30 @@ from msal import ConfidentialClientApplication
 # from .msal_cache import build_persistence
 from emailcrew.msal_cache import build_persistence
 
-def get_silent_token():
+# def get_silent_token():
+#     cache = build_persistence()
+#     app = ConfidentialClientApplication(
+#         client_id=CLIENT_ID,
+#         client_credential=CLIENT_SECRET,
+#         authority=AUTHORITY,
+#         token_cache=cache
+#     )
+#     accounts = app.get_accounts()
+#     if not accounts:
+#         raise RuntimeError("User hasn't signed in. Please schedule again after login.")
+#     result = app.acquire_token_silent(SCOPES, account=accounts[0])
+#     if not result or "access_token" not in result:
+#         raise RuntimeError("Failed to silently acquire token.")
+#     return result["access_token"]
+
+def get_silent_token(request=None):
+    # 1. Web request context → get from session
+    if request is not None:
+        token = request.session.get("access_token")
+        if token:
+            return token
+
+    # 2. Scheduler context → use MSAL cache
     cache = build_persistence()
     app = ConfidentialClientApplication(
         client_id=CLIENT_ID,
@@ -413,12 +436,13 @@ def get_silent_token():
         token_cache=cache
     )
     accounts = app.get_accounts()
-    if not accounts:
-        raise RuntimeError("User hasn't signed in. Please schedule again after login.")
-    result = app.acquire_token_silent(SCOPES, account=accounts[0])
-    if not result or "access_token" not in result:
-        raise RuntimeError("Failed to silently acquire token.")
-    return result["access_token"]
+    if accounts:
+        result = app.acquire_token_silent(SCOPES, account=accounts[0])
+        if result and "access_token" in result:
+            return result["access_token"]
+
+    raise RuntimeError("No valid access token found. Please log in first.")
+
 
 # Helper: Generate authorization URL
 def get_authorization_url():

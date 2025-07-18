@@ -357,6 +357,11 @@ def oauth_callback(request):
     if "access_token" not in result:
         return render(request, 'scheduler/error.html', {'error': "Failed to acquire token."})
 
+    # request.session["access_token"] = result["access_token"]
+    # After acquiring result:
+    if "access_token" in result:
+        request.session["access_token"] = result["access_token"]
+
     # Continue flow
     form_data = request.session.get('schedule_form_data')
     if not form_data:

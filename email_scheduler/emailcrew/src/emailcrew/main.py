@@ -49,8 +49,10 @@ def run_crew_and_send_mail(receiver, file_path=None):
 
     try:
         # onedrive_file = download_file_from_onedrive(onedrive_file_path)
-        token = get_silent_token()
-        onedrive_file = download_file_from_onedrive(token, onedrive_file_path)
+        access_token = get_silent_token()
+
+        # Download the file from OneDrive using the token
+        onedrive_file = download_file_from_onedrive(access_token, onedrive_file_path)
         if not onedrive_file:
             raise RuntimeError("Download failed")
 
@@ -83,7 +85,8 @@ def run_crew_and_send_mail(receiver, file_path=None):
                 raise ValueError("No JSON block found in CrewAI result.")
             email_payload = json.loads(m.group(0))
 
-        send_mail(email_payload, attachment_file)
+        send_mail(access_token, email_payload, attachment_file)
+
 
     except Exception as e:
         raise Exception(f"An error occurred while running the crew: {e}")
