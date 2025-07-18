@@ -1,167 +1,169 @@
-# send_outlook_email.py
+# # send_outlook_email.py
 
-import os
-import base64
-import requests
-from msal import ConfidentialClientApplication, SerializableTokenCache
-from dotenv import load_dotenv
-import re
-from docx import Document
-from PyPDF2 import PdfReader
+# import os
+# import base64
+# import requests
+# from msal import ConfidentialClientApplication, SerializableTokenCache
+# from dotenv import load_dotenv
+# import re
+# from docx import Document
+# from PyPDF2 import PdfReader
 
-# ------------------------------------------------------------------------------
-# Helpers: Token Management
-# ------------------------------------------------------------------------------
+# # ------------------------------------------------------------------------------
+# # Helpers: Token Management
+# # ------------------------------------------------------------------------------
 
-def get_token():
-    """
-    Acquire an access token silently from cache, or error if none found.
-    Assumes you've already done the browser-based sign-in at /auth/login/.
-    """
-    load_dotenv()
+# def get_token():
+#     """
+#     Acquire an access token silently from cache, or error if none found.
+#     Assumes you've already done the browser-based sign-in at /auth/login/.
+#     """
+#     load_dotenv()
 
-    client_id     = os.getenv("CLIENT_ID")
-    client_secret = os.getenv("CLIENT_SECRET")
-    authority     = os.getenv("AUTHORITY")
-    scopes        = os.getenv("SCOPES", "").split()
-    cache_path    = os.getenv("TOKEN_CACHE", "token_cache.bin")
+#     client_id     = os.getenv("CLIENT_ID")
+#     client_secret = os.getenv("CLIENT_SECRET")
+#     authority     = os.getenv("AUTHORITY")
+#     scopes        = os.getenv("SCOPES", "").split()
+#     cache_path    = os.getenv("TOKEN_CACHE", "token_cache.bin")
 
-    # 1) Initialize the token cache
-    cache = SerializableTokenCache()
-    if os.path.exists(cache_path):
-        cache.deserialize(open(cache_path, "r").read())
+#     # 1) Initialize the token cache
+#     cache = SerializableTokenCache()
+#     if os.path.exists(cache_path):
+#         cache.deserialize(open(cache_path, "r").read())
 
-    # 2) Create the ConfidentialClientApplication
-    app = ConfidentialClientApplication(
-        client_id=client_id,
-        authority=authority,
-        client_credential=client_secret,
-        token_cache=cache
-    )
+#     # 2) Create the ConfidentialClientApplication
+#     app = ConfidentialClientApplication(
+#         client_id=client_id,
+#         authority=authority,
+#         client_credential=client_secret,
+#         token_cache=cache
+#     )
 
-    # 3) Try to get a token silently
-    accounts = app.get_accounts()
-    if accounts:
-        result = app.acquire_token_silent(scopes, account=accounts[0])
-        if result and "access_token" in result:
-            return result["access_token"]
+#     # 3) Try to get a token silently
+#     accounts = app.get_accounts()
+#     if accounts:
+#         result = app.acquire_token_silent(scopes, account=accounts[0])
+#         if result and "access_token" in result:
+#             return result["access_token"]
 
-    # 4) No token in cache → the user must have visited /auth/login/
-    raise RuntimeError(
-        "No access token found in cache. "
-        "Redirect the user to /auth/login/ to sign in."
-    )
+#     # 4) No token in cache → the user must have visited /auth/login/
+#     raise RuntimeError(
+#         "No access token found in cache. "
+#         "Redirect the user to /auth/login/ to sign in."
+#     )
 
-# ------------------------------------------------------------------------------
-# File Conversion & Attachment Helpers
-# ------------------------------------------------------------------------------
+# # ------------------------------------------------------------------------------
+# # File Conversion & Attachment Helpers
+# # ------------------------------------------------------------------------------
 
-def convert_to_txt(input_path: str, output_dir: str = "knowledge") -> str:
-    """Converts .docx/.pdf to .txt, returns the .txt path."""
-    os.makedirs(output_dir, exist_ok=True)
-    base_name   = os.path.splitext(os.path.basename(input_path))[0]
-    output_path = os.path.join(output_dir, f"{base_name}.txt")
-    ext = input_path.lower().split(".")[-1]
+# def convert_to_txt(input_path: str, output_dir: str = "knowledge") -> str:
+#     """Converts .docx/.pdf to .txt, returns the .txt path."""
+#     os.makedirs(output_dir, exist_ok=True)
+#     base_name   = os.path.splitext(os.path.basename(input_path))[0]
+#     output_path = os.path.join(output_dir, f"{base_name}.txt")
+#     ext = input_path.lower().split(".")[-1]
 
-    if ext == "docx":
-        doc  = Document(input_path)
-        text = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
-    elif ext == "pdf":
-        reader = PdfReader(input_path)
-        text   = "\n".join(
-            page.extract_text() or "" for page in reader.pages
-        ).strip()
-    elif ext == "txt":
-        return input_path
-    else:
-        raise ValueError(f"Unsupported file type: {ext}")
+#     if ext == "docx":
+#         doc  = Document(input_path)
+#         text = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+#     elif ext == "pdf":
+#         reader = PdfReader(input_path)
+#         text   = "\n".join(
+#             page.extract_text() or "" for page in reader.pages
+#         ).strip()
+#     elif ext == "txt":
+#         return input_path
+#     else:
+#         raise ValueError(f"Unsupported file type: {ext}")
 
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(text)
-    return output_path
+#     with open(output_path, "w", encoding="utf-8") as f:
+#         f.write(text)
+#     return output_path
 
-def attach_attachment(file_path: str) -> dict:
-    """Read a file and return a Graph API fileAttachment JSON."""
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"Attachment not found: {file_path}")
-    with open(file_path, "rb") as f:
-        content_b64 = base64.b64encode(f.read()).decode("utf-8")
-    return {
-        "@odata.type": "#microsoft.graph.fileAttachment",
-        "name": os.path.basename(file_path),
-        "contentBytes": content_b64
-    }
+# def attach_attachment(file_path: str) -> dict:
+#     """Read a file and return a Graph API fileAttachment JSON."""
+#     if not os.path.exists(file_path):
+#         raise FileNotFoundError(f"Attachment not found: {file_path}")
+#     with open(file_path, "rb") as f:
+#         content_b64 = base64.b64encode(f.read()).decode("utf-8")
+#     return {
+#         "@odata.type": "#microsoft.graph.fileAttachment",
+#         "name": os.path.basename(file_path),
+#         "contentBytes": content_b64
+#     }
 
-# ------------------------------------------------------------------------------
-# Graph API Calls
-# ------------------------------------------------------------------------------
+# # ------------------------------------------------------------------------------
+# # Graph API Calls
+# # ------------------------------------------------------------------------------
 
-def send_mail(message: dict, file_name: str = ""):
-    """
-    Sends an email via Graph API.  message should be the JSON payload under "message".
-    If file_name is provided, the attachment is added.
-    """
-    token = get_token()
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
-    }
+# def send_mail(message: dict, file_name: str = ""):
+#     """
+#     Sends an email via Graph API.  message should be the JSON payload under "message".
+#     If file_name is provided, the attachment is added.
+#     """
+#     token = get_token()
+#     headers = {
+#         "Authorization": f"Bearer {token}",
+#         "Content-Type": "application/json"
+#     }
 
-    if file_name:
-        message.setdefault("message", {})\
-               .setdefault("attachments", [])\
-               .append(attach_attachment(file_name))
+#     if file_name:
+#         message.setdefault("message", {})\
+#                .setdefault("attachments", [])\
+#                .append(attach_attachment(file_name))
 
-    response = requests.post(
-        "https://graph.microsoft.com/v1.0/me/sendMail",
-        headers=headers,
-        json={"message": message.get("message", message)}
-    )
-    if response.status_code == 202:
-        print("✅ Email sent successfully!")
-    else:
-        raise RuntimeError(
-            f"❌ Failed to send email: {response.status_code}\n{response.text}"
-        )
+#     response = requests.post(
+#         "https://graph.microsoft.com/v1.0/me/sendMail",
+#         headers=headers,
+#         json={"message": message.get("message", message)}
+#     )
+#     if response.status_code == 202:
+#         print("✅ Email sent successfully!")
+#     else:
+#         raise RuntimeError(
+#             f"❌ Failed to send email: {response.status_code}\n{response.text}"
+#         )
 
-def make_shares_api_url(shared_url: str) -> str:
-    """
-    Given a OneDrive share link, returns the Graph endpoint to download the file.
-    """
-    b64 = base64.urlsafe_b64encode(shared_url.encode("utf-8"))\
-                  .decode("utf-8")\
-                  .rstrip("=")
-    return f"https://graph.microsoft.com/v1.0/shares/u!{b64}/driveItem/content"
+# def make_shares_api_url(shared_url: str) -> str:
+#     """
+#     Given a OneDrive share link, returns the Graph endpoint to download the file.
+#     """
+#     b64 = base64.urlsafe_b64encode(shared_url.encode("utf-8"))\
+#                   .decode("utf-8")\
+#                   .rstrip("=")
+#     return f"https://graph.microsoft.com/v1.0/shares/u!{b64}/driveItem/content"
 
-def download_file_from_onedrive(shared_onedrive_url: str) -> str:
-    """
-    Downloads a OneDrive shared file via Graph and saves it under ./knowledge/.
-    Returns the filename saved.
-    """
-    token   = get_token()
-    headers = {"Authorization": f"Bearer {token}"}
-    url     = make_shares_api_url(shared_onedrive_url)
+# def download_file_from_onedrive(shared_onedrive_url: str) -> str:
+#     """
+#     Downloads a OneDrive shared file via Graph and saves it under ./knowledge/.
+#     Returns the filename saved.
+#     """
+#     token   = get_token()
+#     headers = {"Authorization": f"Bearer {token}"}
+#     url     = make_shares_api_url(shared_onedrive_url)
 
-    resp = requests.get(url, headers=headers)
-    if resp.status_code != 200:
-        raise RuntimeError(
-            f"❌ Failed to download file: {resp.status_code}\n{resp.text}"
-        )
+#     resp = requests.get(url, headers=headers)
+#     if resp.status_code != 200:
+#         raise RuntimeError(
+#             f"❌ Failed to download file: {resp.status_code}\n{resp.text}"
+#         )
 
-    # Pull filename from Content-Disposition if available
-    disp = resp.headers.get("Content-Disposition", "")
-    m    = re.search(r'filename="(.+?)"', disp)
-    ext  = os.path.splitext(m.group(1))[1] if m else ""
-    fname = f"attachment{ext}"
-    outdir = os.path.join(os.getcwd(), "knowledge")
-    os.makedirs(outdir, exist_ok=True)
-    fullpath = os.path.join(outdir, fname)
+#     # Pull filename from Content-Disposition if available
+#     disp = resp.headers.get("Content-Disposition", "")
+#     m    = re.search(r'filename="(.+?)"', disp)
+#     ext  = os.path.splitext(m.group(1))[1] if m else ""
+#     fname = f"attachment{ext}"
+#     outdir = os.path.join(os.getcwd(), "knowledge")
+#     os.makedirs(outdir, exist_ok=True)
+#     fullpath = os.path.join(outdir, fname)
 
-    with open(fullpath, "wb") as f:
-        f.write(resp.content)
+#     with open(fullpath, "wb") as f:
+#         f.write(resp.content)
 
-    print(f"✅ File downloaded and saved to: {fullpath}")
-    return fname
+#     print(f"✅ File downloaded and saved to: {fullpath}")
+#     return fname
+
+# ?--------------------------------------------------------------------------------------------------------------
 
 # import os
 # import base64
@@ -378,3 +380,184 @@ def download_file_from_onedrive(shared_onedrive_url: str) -> str:
 #         print(response.text)
 
 #     return new_filename
+
+
+import os
+import base64
+import requests
+import re
+from docx import Document
+from PyPDF2 import PdfReader
+from dotenv import load_dotenv
+from urllib.parse import urlencode
+import json
+
+load_dotenv()
+
+AUTHORITY = os.getenv("AUTHORITY")  # e.g., https://login.microsoftonline.com/common
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+REDIRECT_URI = os.getenv("REDIRECT_URI")
+SCOPES = os.getenv("SCOPES", "").split()
+
+from msal import ConfidentialClientApplication
+# from .msal_cache import build_persistence
+from emailcrew.msal_cache import build_persistence
+
+def get_silent_token():
+    cache = build_persistence()
+    app = ConfidentialClientApplication(
+        client_id=CLIENT_ID,
+        client_credential=CLIENT_SECRET,
+        authority=AUTHORITY,
+        token_cache=cache
+    )
+    accounts = app.get_accounts()
+    if not accounts:
+        raise RuntimeError("User hasn't signed in. Please schedule again after login.")
+    result = app.acquire_token_silent(SCOPES, account=accounts[0])
+    if not result or "access_token" not in result:
+        raise RuntimeError("Failed to silently acquire token.")
+    return result["access_token"]
+
+# Helper: Generate authorization URL
+def get_authorization_url():
+    params = {
+        "client_id": CLIENT_ID,
+        "response_type": "code",
+        "redirect_uri": REDIRECT_URI,
+        "response_mode": "query",
+        "scope": " ".join(SCOPES),
+        "prompt": "consent"
+    }
+    return f"{AUTHORITY}/oauth2/v2.0/authorize?{urlencode(params)}"
+
+# Helper: Exchange auth code for token
+def exchange_code_for_token(auth_code: str):
+    token_url = f"{AUTHORITY}/oauth2/v2.0/token"
+    data = {
+        "client_id": CLIENT_ID,
+        "scope": " ".join(SCOPES),
+        "code": auth_code,
+        "redirect_uri": REDIRECT_URI,
+        "grant_type": "authorization_code",
+        "client_secret": CLIENT_SECRET
+    }
+    response = requests.post(token_url, data=data)
+    response.raise_for_status()
+    return response.json()
+
+# Convert uploaded file to text
+def convert_to_txt(input_path: str, output_dir: str = "knowledge") -> str:
+    os.makedirs(output_dir, exist_ok=True)
+    base_name = os.path.splitext(os.path.basename(input_path))[0]
+    output_path = os.path.join(output_dir, f"{base_name}.txt")
+
+    ext = input_path.lower().split(".")[-1]
+
+    if ext == "docx":
+        doc = Document(input_path)
+        text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
+    elif ext == "pdf":
+        reader = PdfReader(input_path)
+        text = "\n".join([page.extract_text() for page in reader.pages if page.extract_text()])
+    elif ext == "txt":
+        return input_path
+    else:
+        raise ValueError(f"Unsupported file type: {ext}")
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(text)
+
+    return output_path
+
+# Attach file to email
+def attach_attachment(file_path):
+    if not os.path.exists(file_path):
+        print("File not found")
+        return None
+
+    with open(file_path, "rb") as f:
+        content = base64.b64encode(f.read()).decode("utf-8")
+
+    return {
+        "@odata.type": "#microsoft.graph.fileAttachment",
+        "name": os.path.basename(file_path),
+        "contentBytes": content
+    }
+
+# Send email with Microsoft Graph
+def send_mail(access_token, message, file_name=""):
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    if file_name:
+        attachment = attach_attachment(file_name)
+        if attachment:
+            message["message"]["attachments"] = [attachment]
+
+    print("➡️ Sending email with payload:\n", json.dumps(message, indent=2))
+
+    send_response = requests.post(
+        "https://graph.microsoft.com/v1.0/me/sendMail",
+        headers=headers,
+        json=message
+    )
+
+    if send_response.status_code == 202:
+        print("✅ Email sent successfully.")
+    else:
+        print(f"❌ Failed to send email: {send_response.status_code}")
+        print(send_response.text)
+
+# Build OneDrive download URL
+def make_shares_api_url(shared_url: str) -> str:
+    b64 = base64.urlsafe_b64encode(shared_url.encode("utf-8")).decode("utf-8").rstrip("=")
+    return f"https://graph.microsoft.com/v1.0/shares/u!{b64}/driveItem/content"
+
+# Download OneDrive file using Microsoft Graph
+# def download_file_from_onedrive(shared_onedrive_url: str) -> str:
+def download_file_from_onedrive(access_token: str, shared_onedrive_url: str) -> str:
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+        # Authorization header removed because you don't pass token here
+    }
+
+    url = make_shares_api_url(shared_onedrive_url)
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        knowledge_dir = os.path.join(os.getcwd(), "knowledge")
+        os.makedirs(knowledge_dir, exist_ok=True)
+
+        content_disp = response.headers.get("Content-Disposition", "")
+        match = re.search(r'filename="(.+?)"', content_disp)
+
+        if match:
+            filename = match.group(1)
+            extension = os.path.splitext(filename)[1]
+        else:
+            extension = ".bin"
+
+        new_filename = f"attachment{extension}"
+        file_path = os.path.join(knowledge_dir, new_filename)
+
+        with open(file_path, "wb") as f:
+            f.write(response.content)
+
+        print(f"✅ File downloaded to: {file_path}")
+        return file_path
+    else:
+        print(f"❌ Failed to download: {response.status_code}")
+        print(response.text)
+        return ""
+
+
+# email_scheduler/emailcrew/src/emailcrew
+
+# file_path = "https://1drv.ms/t/c/901cffeb62aca0b5/EatxEQM0bMRDhpcT5-umeF4BOxtRDKMdkxuJpe20PWyuJg?e=bLhKRV"
+
+# download_file_from_onedrive( file_path)
+# print("Done ✅")

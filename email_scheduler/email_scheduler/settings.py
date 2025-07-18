@@ -17,9 +17,15 @@ import os, sys
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-sys.path.insert(0, os.path.join(BASE_DIR, "src"))
+# sys.path.insert(0, os.path.join(BASE_DIR, "src"))
+sys.path.insert(0, os.path.join(BASE_DIR, "emailcrew", "src", "emailcrew"))
 
-
+from dotenv import load_dotenv
+load_dotenv()
+MS_CLIENT_ID  = os.getenv("CLIENT_ID")
+MS_CLIENT_SECRET  = os.getenv("CLIENT_SECRET")
+MS_SCOPES  = os.getenv("SCOPES", "").split()
+MS_TENANT_ID = "consumers"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -32,7 +38,12 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 
+# allow cookies in localhost development
+SESSION_COOKIE_SAMESITE = None  # or 'Lax'
+CSRF_COOKIE_SAMESITE = None
 # Application definition
 
 INSTALLED_APPS = [

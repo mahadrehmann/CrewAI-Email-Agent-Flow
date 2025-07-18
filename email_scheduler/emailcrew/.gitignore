@@ -4,6 +4,7 @@
 # Environment variables
 .env
 token_cache.bin
+msal_token_cache.bin
 
 # ChromaDB / vector DB knowledge files
 knowledge/

@@ -21,7 +21,9 @@ urlpatterns = [
 
     # Root must be ONLY this:
     path('', scheduler_views.schedule_create, name='schedule_create'),
+    
+    path('auth/login/', scheduler_views.start_oauth, name='start_oauth'),
+    path('auth/callback/', scheduler_views.oauth_callback, name='oauth_callback'),
+#     path('getAtoken/', scheduler_views.oauth_callback, name='oauth_callback'),  # Changed
 
-     path('auth/login/',  authorize, name='authorize'),
-     path('auth/callback/', callback,  name='auth_callback'),
-]
+]    

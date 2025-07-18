@@ -36,7 +36,7 @@ def run_crew_and_send_mail(receiver, file_path=None):
     onedrive_file_path = file_path or "https://1drv.ms/t/c/901cffeb62aca0b5/EatxEQM0bMRDhpcT5-umeF4BOxtRDKMdkxuJpe20PWyuJg?e=bLhKRV"
 
     inputs = {
-        'topic': 'Providing update and explanation of the document',
+        'topic': 'email about the funny Ai drowned',
         'my_name': 'Mahad Rehman',
         'my_signature': 'Computer Science Department\nFAST NUCES Islamabad',
         'recipient_name': 'Sir',
@@ -48,7 +48,9 @@ def run_crew_and_send_mail(receiver, file_path=None):
     }
 
     try:
-        onedrive_file = download_file_from_onedrive(onedrive_file_path)
+        # onedrive_file = download_file_from_onedrive(onedrive_file_path)
+        token = get_silent_token()
+        onedrive_file = download_file_from_onedrive(token, onedrive_file_path)
         if not onedrive_file:
             raise RuntimeError("Download failed")
 
