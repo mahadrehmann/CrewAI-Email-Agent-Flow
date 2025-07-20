@@ -24,10 +24,19 @@ from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 
-# Start CrewAI scheduler once
-if not hasattr(run, "_started"):
+# # Start CrewAI scheduler once
+# if not hasattr(run, "_started"):
+#     threading.Thread(target=run, daemon=True).start()
+#     run._started = True
+
+
+# ─── ONLY START THE SCHEDULER IN THE “REAL” SERVER PROCESS ────────────────────────
+# Django’s auto‑reloader spawns a watcher process *and* a child that actually serves.
+# The child sets RUN_MAIN="true" in its env.  We only want to start our thread there.
+if os.environ.get("RUN_MAIN") == "true" and not hasattr(run, "_started"):
     threading.Thread(target=run, daemon=True).start()
     run._started = True
+
 
 
 @login_required
@@ -36,6 +45,9 @@ def schedule_create(request):
 
     if request.method == 'POST':
         receiver = request.POST['receiver']
+        topic = request.POST['topic']
+        my_name = request.POST['my_name']
+        recipient_name = request.POST['recipient_name']
         filepath = request.POST['filepath']
         day_str  = request.POST['day'].lower()
         time_str = request.POST['time']
@@ -49,10 +61,13 @@ def schedule_create(request):
             })
 
         request.session['schedule_form_data'] = {
-            'receiver': receiver,
-            'filepath': filepath,
-            'day': day_str,
-            'time': time_str
+            'receiver':       receiver,
+            'filepath':       filepath,
+            'day':            day_str,
+            'time':           time_str,
+            'topic':          topic,
+            'my_name':        my_name,
+            'recipient_name': recipient_name,            
         }
 
         return redirect('start_oauth')
@@ -71,11 +86,6 @@ def start_oauth(request):
 
     print("\n\nUsing redirect_uri:", redirect_uri, "\n\n")
 
-    # msal_app = msal.ConfidentialClientApplication(
-    #     client_id=client_id,
-    #     client_credential=client_secret,
-    #     authority=authority
-    # )
     msal_app = msal.ConfidentialClientApplication(
         client_id=client_id,
         client_credential=client_secret,
@@ -145,10 +155,13 @@ def oauth_callback(request):
     )
 
     set_schedule_config(
-        receiver=form_data['receiver'],
-        filepath=form_data['filepath'],
-        day=form_data['day'],
-        time=form_data['time']
+        receiver = form_data['receiver'],
+        filepath = form_data['filepath'],
+        day = form_data['day'],
+        time = form_data['time'],
+        topic = form_data['topic'],
+        my_name = form_data['my_name'],
+        recipient_name= form_data['recipient_name'],
     )
 
     del request.session['schedule_form_data']
